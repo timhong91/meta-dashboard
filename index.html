@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메타 광고 통합 대시보드</title>
+<style>
+  :root{
+    --bg:#0f1117; --card:#1a1d27; --line:#2c3142;
+    --txt:#e8eaf0; --sub:#9aa0b4; --accent:#5b8def;
+    --green:#34d399; --green-bg:#0d2e23;
+    --yellow:#fbbf24; --yellow-bg:#332a0d;
+    --red:#f87171; --red-bg:#331616;
+    --gray:#6b7280;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.5;padding:20px;max-width:1100px;margin:0 auto}
+  /* 비밀번호 게이트 */
+  #gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .gate-box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:34px 28px;width:100%;max-width:360px;text-align:center}
+  .gate-box h2{font-size:18px;margin-bottom:6px}
+  .gate-box p{font-size:13px;color:var(--sub);margin-bottom:20px}
+  .gate-box input{width:100%;padding:13px 15px;border-radius:11px;border:1px solid var(--line);background:#10131b;color:var(--txt);font-size:16px;margin-bottom:12px}
+  .gate-box input:focus{outline:none;border-color:var(--accent)}
+  .gate-box button{width:100%;padding:13px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+  .gate-box button:active{opacity:.85}
+  #err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+  h1{font-size:20px;font-weight:700;letter-spacing:-.5px}
+  .meta-info{font-size:12px;color:var(--sub);text-align:right}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .tab{padding:9px 15px;border-radius:10px;background:var(--card);border:1px solid var(--line);
+    color:var(--sub);cursor:pointer;font-size:14px;font-weight:600;transition:.15s;white-space:nowrap}
+  .tab:hover{border-color:var(--accent);color:var(--txt)}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .periodtabs .tab.active{background:#2d3550;border-color:var(--accent);color:#fff}
+  .section-label{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin:0 0 7px 2px;font-weight:700}
+  .headcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:18px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+  .headcard .acct{font-size:17px;font-weight:700}
+  .headcard .range{font-size:13px;color:var(--sub);margin-top:3px}
+  .roas-badge{font-size:28px;font-weight:800;padding:6px 16px;border-radius:12px}
+  .roas-badge small{font-size:13px;font-weight:600;opacity:.8}
+  .badge-green{color:var(--green);background:var(--green-bg)}
+  .badge-yellow{color:var(--yellow);background:var(--yellow-bg)}
+  .badge-red{color:var(--red);background:var(--red-bg)}
+  .badge-gray{color:var(--gray);background:#1a1d27}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+  .kpi .label{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:6px}
+  .kpi .value{font-size:20px;font-weight:700;letter-spacing:-.5px}
+  .kpi .value small{font-size:13px;color:var(--sub);font-weight:600}
+  .kpi.primary{background:linear-gradient(135deg,#1e2536,#1a1d27)}
+  .kpi.accent .value{color:var(--accent)}
+  .empty{color:var(--sub);font-size:14px;padding:30px;text-align:center}
+  .foot{margin-top:22px;font-size:11px;color:var(--sub);line-height:1.7;border-top:1px solid var(--line);padding-top:14px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-box">
+    <h2>🔒 메타 광고 대시보드</h2>
+    <p>비밀번호를 입력하세요</p>
+    <input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password">
+    <button id="enter">열기</button>
+    <div id="err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <header>
+    <div><h1>📊 메타 광고 통합 대시보드</h1></div>
+    <div class="meta-info">
+      최종 갱신: <span id="ts">2026-06-12 11:15</span><br>
+      통화: KRW · 1시간마다 자동 갱신
+    </div>
+  </header>
+
+  <div class="section-label">계정 선택</div>
+  <div class="tabs accttabs" id="accttabs"></div>
+
+  <div class="section-label">기간 선택</div>
+  <div class="tabs periodtabs" id="periodtabs"></div>
+
+  <div class="headcard">
+    <div>
+      <div class="acct" id="h-acct">—</div>
+      <div class="range" id="h-range">—</div>
+    </div>
+    <div class="roas-badge" id="h-roas">—</div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="foot">
+    <span class="dot" style="background:var(--green)"></span>ROAS 1.3↑ 양호 &nbsp;
+    <span class="dot" style="background:var(--yellow)"></span>1.0~1.3 보통 &nbsp;
+    <span class="dot" style="background:var(--red)"></span>1.0↓ 적자<br>
+    ※ 추정매출 = ROAS × 광고비로 역산. 구매수는 omni_purchase 기준. '오늘'은 집계 진행 중이라 적게 보일 수 있어요.
+  </div>
+</div>
+
+<script>
+const ENC = {"salt": "49d4fCmd3Envc1hbcfku7Q==", "iv": "T6pxp/+e6HGNa6Dc", "ct": "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", "iter": 200000};
+
+// ── 복호화 (Web Crypto API) ──
+function b64(s){ return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); }
+async function decryptPayload(password){
+  const salt = b64(ENC.salt), iv = b64(ENC.iv), ct = b64(ENC.ct);
+  const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    {name:"PBKDF2", salt, iterations:ENC.iter, hash:"SHA-256"},
+    km, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv}, key, ct);
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+let DATA = {}, curAcct = "", curPeriod = "last_7d";
+const PERIODS = [["today","오늘"],["yesterday","어제"],["last_7d","최근 7일"],["last_30d","최근 30일"],["maximum","전체 기간"]];
+const won = n => n==null ? "—" : "₩"+Math.round(n).toLocaleString();
+const intc = n => n==null ? "—" : Math.round(n).toLocaleString();
+function roasClass(r){ if(r==null) return "badge-gray"; if(r>=1.3) return "badge-green"; if(r>=1.0) return "badge-yellow"; return "badge-red"; }
+
+function buildTabs(){
+  const at = document.getElementById("accttabs"); at.innerHTML = "";
+  Object.keys(DATA).forEach(name=>{
+    const d = document.createElement("div");
+    d.className = "tab"+(name===curAcct?" active":"");
+    d.textContent = name; d.onclick = ()=>{curAcct=name; render();};
+    at.appendChild(d);
+  });
+  const pt = document.getElementById("periodtabs"); pt.innerHTML = "";
+  PERIODS.forEach(([key,label])=>{
+    const d = document.createElement("div");
+    d.className = "tab"+(key===curPeriod?" active":"");
+    d.textContent = label; d.onclick = ()=>{curPeriod=key; render();};
+    pt.appendChild(d);
+  });
+}
+
+function render(){
+  buildTabs();
+  const p = DATA[curAcct].periods[curPeriod];
+  document.getElementById("h-acct").textContent = curAcct;
+  if(!p){
+    document.getElementById("h-range").textContent = "이 기간 데이터 없음";
+    const rb = document.getElementById("h-roas"); rb.className = "roas-badge badge-gray"; rb.innerHTML = "—";
+    document.getElementById("grid").innerHTML = '<div class="empty">이 기간에는 집행 데이터가 없어요.</div>';
+    return;
+  }
+  const revenue = (p.roas!=null) ? p.roas*p.spend : null;
+  const cpa = (p.purch && p.purch>0) ? p.spend/p.purch : null;
+  const aov = (revenue!=null && p.purch>0) ? revenue/p.purch : null;
+  document.getElementById("h-range").textContent = p.r;
+  const rb = document.getElementById("h-roas");
+  rb.className = "roas-badge "+roasClass(p.roas);
+  rb.innerHTML = (p.roas==null?"—":p.roas.toFixed(2))+"<small>x ROAS</small>";
+  const cards = [
+    ["광고비", won(p.spend), "primary"],
+    ["추정매출", won(revenue), "primary accent"],
+    ["구매수", intc(p.purch)+"<small> 건</small>", ""],
+    ["CPA (구매당비용)", won(cpa), ""],
+    ["객단가(AOV)", won(aov), ""],
+    ["CTR", (p.ctr==null?"—":p.ctr.toFixed(2))+"<small>%</small>", ""],
+    ["CPC (클릭당비용)", won(p.cpc), ""],
+    ["CPM (1천노출당)", won(p.cpm), ""],
+    ["노출수", intc(p.imp), ""],
+    ["클릭수", intc(p.clk), ""],
+    ["도달수", intc(p.reach), ""],
+    ["빈도", (p.freq==null?"—":p.freq.toFixed(2))+"<small> 회</small>", ""]
+  ];
+  const grid = document.getElementById("grid"); grid.innerHTML = "";
+  cards.forEach(([label,val,cls])=>{
+    const el = document.createElement("div");
+    el.className = "kpi "+cls;
+    el.innerHTML = `<div class="label">${label}</div><div class="value">${val}</div>`;
+    grid.appendChild(el);
+  });
+}
+
+async function unlock(password){
+  const payload = await decryptPayload(password);  // 틀리면 throw
+  DATA = payload.data;
+  curAcct = Object.keys(DATA)[0];
+  document.getElementById("ts").textContent = payload.ts || "2026-06-12 11:15";
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  render();
+}
+
+document.getElementById("enter").onclick = tryUnlock;
+document.getElementById("pw").addEventListener("keydown", e=>{ if(e.key==="Enter") tryUnlock(); });
+async function tryUnlock(){
+  const pw = document.getElementById("pw").value;
+  const err = document.getElementById("err");
+  err.textContent = "확인 중...";
+  try {
+    await unlock(pw);
+    try { sessionStorage.setItem("dash_pw", pw); } catch(e){}
+  } catch(e){
+    err.textContent = "비밀번호가 틀렸어요.";
+    document.getElementById("pw").value = "";
+  }
+}
+
+// 같은 탭에서 새로고침 시 재입력 생략
+(async function(){
+  let saved = null;
+  try { saved = sessionStorage.getItem("dash_pw"); } catch(e){}
+  if(saved){ try { await unlock(saved); } catch(e){ try{sessionStorage.removeItem("dash_pw");}catch(_){} } }
+  document.getElementById("pw").focus();
+})();
+</script>
+</body>
+</html>
